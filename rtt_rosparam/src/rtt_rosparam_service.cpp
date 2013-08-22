@@ -286,6 +286,7 @@ private:
         }
         case XmlRpc::XmlRpcValue::TypeInt:
         {
+            log(Warning) << "TypeInt " << endlog();
             Property<int> tmp("");
             tmp.set(val);
             if (prop->refresh(&tmp))
@@ -294,6 +295,7 @@ private:
         }
         case XmlRpc::XmlRpcValue::TypeString:
         {
+            log(Warning) << "TypeString " << prop->getType() << endlog();
             Property<std::string> tmp("");
             tmp.set(val);
             if (prop->refresh(&tmp))
@@ -302,25 +304,42 @@ private:
         }
         case XmlRpc::XmlRpcValue::TypeArray:
         {
+        
             Property<PropertyBag> bag("");
             bag = prop;
-            if (!bag.ready())
-                return false;
-            if (val.size() != (int) bag.value().size())
-                return false;
-            for (int i = 0; i < val.size(); i++)
+            
+            if(bag.value().getType() == "strings")
             {
-                if (!XmlRpcValueToProperty(val[i], bag.value().getItem(i)))
-                    return false;
+              PropertyBag tmp("strings");
+              for (int i = 0; i < val.size(); i++)
+              {
+                std::stringstream ss;
+                ss << "Element" << i ;
+                tmp.add(new Property<std::string>(ss.str(), "", std::string(val[i])));
+              }
+              bag.set(tmp);
+              return true;
+            } else {
+              if (!bag.ready())
+                  return false;
+              if (val.size() != (int) bag.value().size())
+                  return false;
+              
+              for (int i = 0; i < val.size(); i++)
+              {
+                  if (!XmlRpcValueToProperty(val[i], bag.value().getItem(i)))
+                      return false;
+              }
+              //is this necessary?
+              if (prop->getTypeInfo()->composeType(bag.getDataSource(),
+                      prop->getDataSource()))
+                  return true;
+              return true;
             }
-            //is this necessary?
-            if (prop->getTypeInfo()->composeType(bag.getDataSource(),
-                    prop->getDataSource()))
-                return true;
-            return false;
         }
         case XmlRpc::XmlRpcValue::TypeStruct:
         {
+            log(Warning) << "TypeStruct " << endlog();
             Property<PropertyBag> bag("");
             bag = prop;
             if (!bag.ready())
